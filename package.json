@@ -1,0 +1,12 @@
+{
+  "name": "Schema-Inspector",
+  "version": "1.0.0",
+  "main": "./lib/schema-inspector.js",
+  "devDependencies": {
+    "mocha": "https://github.com/visionmedia/mocha/tarball/master",
+    "should": "https://github.com/visionmedia/should.js/tarball/master"
+  },
+  "scripts": {
+    "test": "make test"
+  }
+}
