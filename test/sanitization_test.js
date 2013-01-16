@@ -185,7 +185,7 @@ exports.sanitization = function () {
 
 	}); // suite "schema #5"
 
-	suite('schema #6 (deeply nested object sanitization', function () {
+	suite('schema #6 (deeply nested object sanitization)', function () {
 		var schema = {
 			type: 'object',
 			properties: {
@@ -752,4 +752,80 @@ exports.sanitization = function () {
 			candidate[4].should.equal('Dieu');
 		});
 	}); // suite "schema #15"
+
+	suite('schema #16 (Asynchronous call)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						ipsum: {
+							type: 'object',
+							properties: {
+								dolor: {
+									type: 'object',
+									properties: {
+										sit: {
+											type: 'object',
+											properties: {
+												amet: { type: 'number' }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: { ipsum: { dolor: { sit: { amet: '1234' } } } }
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(1);
+				result.reporting[0].property.should.be.equal('@.lorem.ipsum.dolor.sit.amet');
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: { ipsum: { dolor: { sit: JSON.stringify({ amet: '1234' }) } } }
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.reporting[0].property.should.be.equal('@.lorem.ipsum.dolor.sit');
+				result.reporting[1].property.should.be.equal('@.lorem.ipsum.dolor.sit.amet');
+				done();
+			});
+		});
+
+		test('candidate #3', function (done) {
+			var candidate = {
+				lorem: { ipsum: { dolor: JSON.stringify({ sit: { amet: '1234' } }) } }
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.reporting[0].property.should.be.equal('@.lorem.ipsum.dolor');
+				result.reporting[1].property.should.be.equal('@.lorem.ipsum.dolor.sit.amet');
+				done();
+			});
+		});
+	}); // suite "schema #16"
 };
