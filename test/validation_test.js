@@ -1143,10 +1143,10 @@ exports.validation = function () {
 							type: 'array',
 							items: {
 								type: ['string', 'number'],
-								exec: function (schema, candidate, report) {
+								exec: function (schema, candidate) {
 									if (typeof candidate === 'string') {
 										if (candidate[0] === '_') {
-											report('should not begin with a "_"');
+											this.report('should not begin with a "_"');
 										}
 									}
 								}
@@ -1201,14 +1201,14 @@ exports.validation = function () {
 			items: {
 				type: ['string', 'number', 'date'],
 				exec: [
-					function (schema, candidat, report) {
+					function (schema, candidat) {
 						if (typeof candidat === 'number') {
-							report('This is a number');
+							this.report('This is a number');
 						}
 					},
-					function (schema, candidat, report) {
+					function (schema, candidat) {
 						if (typeof candidat === 'string') {
-							report('This is a string');
+							this.report('This is a string');
 						}
 					}
 				]
@@ -1423,6 +1423,47 @@ exports.validation = function () {
 		});
 	}); // suite "schema #19"
 
+	suite('schema #19.1 (Asynchronous call + asynchronous exec field)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						ipsum: {
+							type: 'string',
+							exec: function (schema, post, callback) {
+								var self = this;
+								setTimeout(function () {
+									if (post !== 'dolor sit amet') {
+										self.report('should equal dolor sit amet')
+									}
+									callback();
+								}, 1000);
+							}
+						}
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 'dolor sit amet'
+				}
+			};
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+	}); // suite "schema #19.1"
+
 	suite('schema #20 (custom schemas)', function () {
 		var schema = {
 			type: 'object',
@@ -1474,7 +1515,7 @@ exports.validation = function () {
 		});
 	}); // suite "schema #20"
 
-	suite('schema #20 (custom schemas + asynchronous call)', function () {
+	suite('schema #20.1 (custom schemas + asynchronous call)', function () {
 		var schema = {
 			type: 'object',
 			properties: {
@@ -1529,5 +1570,5 @@ exports.validation = function () {
 				done();
 			});
 		});
-	}); // suite "schema #20"
+	}); // suite "schema #20.1"
 };
