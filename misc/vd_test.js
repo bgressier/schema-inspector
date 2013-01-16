@@ -41,8 +41,15 @@ if (typeof require === 'function') {
 	};
 
 	// ---------------------------------------------------------------------------
+	var vdr = SchemaInspector.newValidation(schema);
 
-	var r = SchemaInspector.validate(schema, obj);
+	vdr.validate(obj, function (err, r) {
+		console.log(r);
+		console.log(r.format());
+	});
+
+return;
+	var r = SchemaInspector.validate(obj);
 
 	var done = function () {
 		var html = '<p>'

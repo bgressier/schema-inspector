@@ -1275,9 +1275,9 @@ exports.validation = function () {
 			type: 'object',
 			strict: true,
 			properties: {
-				lorem: { type: 'number '},
-				ipsum: { type: 'number '},
-				dolor: { type: 'string '}
+				lorem: { type: 'number' },
+				ipsum: { type: 'number' },
+				dolor: { type: 'string' }
 			}
 		};
 
@@ -1364,5 +1364,170 @@ exports.validation = function () {
 			result.should.have.property('error').with.be.an.instanceof(Array)
 			.and.be.lengthOf(0);
 		});
-	});
+	}); // suite "schema #18.1
+
+	suite('schema #19 (Asynchronous call)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				name: { type: 'string', minLength: 4, maxLength: 12 },
+				age: { type: 'number', gt: 0, lt: 100 },
+				id: { type: 'string', exactLength: 8, pattern: /^A.{6}Z$/ },
+				stuff: {
+					type: 'array',
+					minLength: 2,
+					maxLength: 8,
+					items: {
+						type: ['string', 'null', 'number'],
+						minLength: 1
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				name: 'NikitaJS',
+				age: 20,
+				id: 'AbcdefgZ',
+				stuff: ['JavaScript', null, 1234]
+			};
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				name: 'Nik',
+				age: 20,
+				id: 'Abcdefgb',
+				stuff: ['', null, 1234]
+			};
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(3);
+				result.error[0].property.should.equal('@.name');
+				result.error[1].property.should.equal('@.id');
+				result.error[2].property.should.equal('@.stuff[0]');
+				done();
+			});
+		});
+	}); // suite "schema #19"
+
+	suite('schema #20 (custom schemas)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: { type: 'number', $divisibleBy: 4 },
+				ipsum: { type: 'number', $divisibleBy: 5 }
+			}
+		};
+
+		var custom = {
+			divisibleBy: function (schema, candidate) {
+				var dvb = schema.$divisibleBy;
+				if (typeof dvb !== 'number' || typeof candidate !== 'number') {
+					return;
+				}
+				var r = candidate / dvb;
+				if ((r | 0) !== r)  {
+					this.report('should be divisible by ' + dvb);
+				}
+			}
+		};
+
+		test('candidate #1', function () {
+			var candidate = {
+				lorem: 12,
+				ipsum: 25,
+			};
+
+			var result = si.validate(schema, candidate, custom);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(true);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(0);
+		});
+
+		test('candidate #2', function () {
+			var candidate = {
+				lorem: 11,
+				ipsum: 22,
+			};
+
+			var result = si.validate(schema, candidate, custom);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(false);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(2);
+			result.error[0].property.should.equal('@.lorem');
+			result.error[1].property.should.equal('@.ipsum');
+		});
+	}); // suite "schema #20"
+
+	suite('schema #20 (custom schemas + asynchronous call)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: { type: 'number', $divisibleBy: 4 },
+				ipsum: { type: 'number', $divisibleBy: 5 }
+			}
+		};
+
+		var custom = {
+			divisibleBy: function (schema, candidate) {
+				var dvb = schema.$divisibleBy;
+				if (typeof dvb !== 'number' || typeof candidate !== 'number') {
+					return;
+				}
+				var r = candidate / dvb;
+				if ((r | 0) !== r)  {
+					this.report('should be divisible by ' + dvb);
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: 12,
+				ipsum: 25,
+			};
+
+			si.validate(schema, candidate, custom, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: 11,
+				ipsum: 22,
+			};
+
+			si.validate(schema, candidate, custom, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.error[0].property.should.equal('@.lorem');
+				result.error[1].property.should.equal('@.ipsum');
+				done();
+			});
+		});
+	}); // suite "schema #20"
 };
