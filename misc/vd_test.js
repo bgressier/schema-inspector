@@ -19,11 +19,16 @@ if (typeof require === 'function') {
 
 	var schema = {
 		type: 'object',
-		strict: true,
+		strict: false,
 		properties: {
-			lorem: { type: 'number'	},
+			lorem: { type: 'string', $v12: 'truc'	},
 			ipsum: { type: 'number'	},
 			dolor: { type: 'string'	}
+		}
+	};
+
+	var custom = {
+		v12: function (schema, post) {
 		}
 	};
 
