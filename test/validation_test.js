@@ -1501,6 +1501,63 @@ exports.validation = function () {
 
 	}); // suite "schema #19.1"
 
+	suite('schema #19.2 (Asynchronous call + globing)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						'*': { type: [ 'number', 'string' ], gte: 10, minLength: 4 },
+						consectetur: { type: 'string', optional: true, maxLength: 10 }
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 12,
+					dolor: 34,
+					sit: 'amet'
+				}
+			};
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 5,
+					dolor: 34,
+					sit: 'am',
+					consectetur: 'adipiscing elit'
+				}
+			};
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(3);
+				result.error[0].property.should.equal('@.lorem.ipsum');
+				result.error[1].property.should.equal('@.lorem.sit');
+				result.error[2].property.should.equal('@.lorem.consectetur');
+				done();
+			});
+		});
+	}); // suite "schema #19.2"
+
 	suite('schema #20 (custom schemas)', function () {
 		var schema = {
 			type: 'object',
