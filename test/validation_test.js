@@ -1434,14 +1434,30 @@ exports.validation = function () {
 							type: 'string',
 							exec: function (schema, post, callback) {
 								var self = this;
-								setTimeout(function () {
+								process.nextTick(function () {
 									if (post !== 'dolor sit amet') {
 										self.report('should equal dolor sit amet')
 									}
 									callback();
-								}, 1000);
+								});
 							}
 						}
+					}
+				},
+				arr: {
+					type: 'array',
+					optional: true,
+					exec: function (schema, post, callback) {
+						if (!Array.isArray(post)) {
+							return callback();
+						}
+						var self = this;
+						process.nextTick(function () {
+							if (post.length !== 5) {
+								self.report('should have a length of 5');
+							}
+							callback();
+						});
 					}
 				}
 			}
@@ -1451,7 +1467,8 @@ exports.validation = function () {
 			var candidate = {
 				lorem: {
 					ipsum: 'dolor sit amet'
-				}
+				},
+				arr: [12, 23, 34, 45, 56]
 			};
 			si.validate(schema, candidate, function (err, result) {
 				should.not.exist(err);
@@ -1462,6 +1479,26 @@ exports.validation = function () {
 				done();
 			});
 		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 'wrong phrase'
+				},
+				arr: [12, 23, 34, 45]
+			};
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.error[0].property.should.equal('@.lorem.ipsum');
+				result.error[1].property.should.equal('@.arr');
+				done();
+			});
+		});
+
 	}); // suite "schema #19.1"
 
 	suite('schema #20 (custom schemas)', function () {
@@ -1525,15 +1562,19 @@ exports.validation = function () {
 		};
 
 		var custom = {
-			divisibleBy: function (schema, candidate) {
+			divisibleBy: function (schema, candidate, callback) {
 				var dvb = schema.$divisibleBy;
 				if (typeof dvb !== 'number' || typeof candidate !== 'number') {
-					return;
+					return callback();
 				}
-				var r = candidate / dvb;
-				if ((r | 0) !== r)  {
-					this.report('should be divisible by ' + dvb);
-				}
+				var self = this;
+				process.nextTick(function () {
+					var r = candidate / dvb;
+					if ((r | 0) !== r)  {
+						self.report('should be divisible by ' + dvb);
+					}
+					callback();
+				});
 			}
 		};
 
