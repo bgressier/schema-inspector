@@ -732,7 +732,8 @@ exports.sanitization = function () {
 				type: 'string',
 				exec: function (schema, post) {
 					if ((/^nikita$/i).test(post)) {
-						return 'Dieu';
+						this.report();
+						return 'God';
 					}
 					return post;
 				}
@@ -748,8 +749,8 @@ exports.sanitization = function () {
 			.and.be.lengthOf(2);
 			result.reporting[0].property.should.be.equal('@[1]');
 			result.reporting[1].property.should.be.equal('@[4]');
-			candidate[1].should.equal('Dieu');
-			candidate[4].should.equal('Dieu');
+			candidate[1].should.equal('God');
+			candidate[4].should.equal('God');
 		});
 	}); // suite "schema #15"
 
@@ -792,6 +793,7 @@ exports.sanitization = function () {
 				result.should.have.property('reporting').with.be.an.instanceof(Array)
 				.and.be.lengthOf(1);
 				result.reporting[0].property.should.be.equal('@.lorem.ipsum.dolor.sit.amet');
+				candidate.lorem.ipsum.dolor.sit.amet.should.equal(1234);
 				done();
 			});
 		});
@@ -828,4 +830,183 @@ exports.sanitization = function () {
 			});
 		});
 	}); // suite "schema #16"
+
+	suite('schema #16.1 (Asynchronous call + globing)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						'*': { type: [ 'number', 'string' ], min: 10, minLength: 4 },
+						consectetur: { type: 'string', optional: true, maxLength: 10 }
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 12,
+					dolor: 34,
+					sit: 'amet'
+				}
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				candidate.should.eql({
+					lorem: {
+						ipsum: 12,
+						dolor: 34,
+						sit: 'amet'
+					}
+				});
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 5,
+					dolor: 34,
+					sit: 'am',
+					consectetur: 'adipiscing elit'
+				}
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(3);
+	 			result.reporting[0].property.should.be.equal('@.lorem.ipsum');
+				result.reporting[1].property.should.be.equal('@.lorem.sit');
+				result.reporting[2].property.should.be.equal('@.lorem.consectetur');
+				candidate.should.eql({
+					lorem: {
+						ipsum: 10,
+						dolor: 34,
+						sit: 'am--',
+						consectetur: 'adipiscing'
+					}
+				});
+				done();
+			});
+		});
+	}); // suite "schema #16.1"
+
+	suite('schema #16.2 (field "exec")', function () {
+		var schema = {
+			type: 'array',
+			items: {
+				type: 'string',
+				exec: function (schema, post, callback) {
+					var self = this;
+					process.nextTick(function () {
+						if ((/^nikita$/i).test(post)) {
+							self.report();
+							return callback(null, 'God');
+						}
+						callback(null, post);
+					});
+				}
+			}
+		};
+
+		test('candidat #1', function (done) {
+			var candidate = 'Hello Nikita is coding! nikita'.split(/\s+/);
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.reporting[0].property.should.be.equal('@[1]');
+				result.reporting[1].property.should.be.equal('@[4]');
+				candidate.should.eql(['Hello', 'God', 'is', 'coding!', 'God'])
+				done();
+			});
+		});
+
+		test('candidat #2', function (done) {
+			var candidate = 'niKita   is   nikita  and  is   cool'.split(/\s+/);
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.reporting[0].property.should.be.equal('@[0]');
+				result.reporting[1].property.should.be.equal('@[2]');
+				candidate.should.eql([ 'God', 'is', 'God', 'and', 'is', 'cool' ]);
+				done();
+			});
+		});
+	}); // suite "schema #16.2"
+
+	suite('schema #16.3 (Asynchronous call with custom field)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'number',
+					$superiorMod: 5
+				}
+			}
+		};
+
+		var custom = {
+			superiorMod: function (schema, post, callback) {
+				var spm = schema.$superiorMod;
+				if (typeof spm !== 'number' || typeof post !== 'number') {
+					callback();
+				}
+				var self = this;
+				process.nextTick(function () {
+					var mod = post % spm;
+					if (mod !== 0) {
+						self.report();
+						return callback(null, post + spm - mod);
+					}
+					callback(null, post);
+				});
+			}
+		};
+
+		test('candidat #1', function (done) {
+			var candidate = {
+				lorem: 5
+			};
+
+			si.sanitize(schema, candidate, custom, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidat #2', function (done) {
+			var candidate = {
+				lorem: 7
+			};
+
+			si.sanitize(schema, candidate, custom, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(1);
+				result.reporting[0].property.should.be.equal('@.lorem');
+				candidate.lorem.should.equal(10);
+				done();
+			});
+		});
+	}); // suite "schema #16.3"
 };

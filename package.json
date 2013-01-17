@@ -2,6 +2,9 @@
   "name": "schema-inspector",
   "version": "1.0.0",
   "main": "./lib/schema-inspector.js",
+  "dependencies": {
+    "async": ">=0.1.22"
+  },
   "devDependencies": {
     "mocha": "https://github.com/visionmedia/mocha/tarball/master",
     "should": "https://github.com/visionmedia/should.js/tarball/master"
