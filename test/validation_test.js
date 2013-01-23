@@ -1233,6 +1233,57 @@ exports.validation = function () {
 
 	}); // suite "schema #16.1"
 
+	suite('schema #16.2 ("exec" field testing with context)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						ipsum: { type: 'string' }
+					}
+				},
+				sit: {
+					type: 'string',
+					exec: function (schema, candidate) {
+						if (candidate === this.origin.lorem.ipsum) {
+							this.report('should not equal @.lorem.ipsum');
+						}
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function () {
+			var candidate = {
+				lorem: {
+					ipsum: 'dolor'
+				},
+				sit: 'amet'
+			};
+			var result = si.validate(schema, candidate);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(true);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(0);
+		});
+
+		test('candidate #2', function () {
+			var candidate = {
+				lorem: {
+					ipsum: 'dolor'
+				},
+				sit: 'dolor'
+			};
+			var result = si.validate(schema, candidate);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(false);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(1);
+			result.error[0].property.should.equal('@.sit');
+		});
+	}); // suite "schema #16.2"
+
 	suite('schema #17 ("someKeys" field)', function () {
 		var schema = {
 			type: 'object',
@@ -1453,6 +1504,9 @@ exports.validation = function () {
 						}
 						var self = this;
 						process.nextTick(function () {
+							if (post.length > 8) {
+								return callback(new Error('Array length is too damn high!'));
+							}
 							if (post.length !== 5) {
 								self.report('should have a length of 5');
 							}
@@ -1499,6 +1553,19 @@ exports.validation = function () {
 			});
 		});
 
+		test('candidate #3', function (done) {
+			var candidate = {
+				lorem: {
+					ipsum: 'wrong phrase'
+				},
+				arr: [12, 23, 34, 45, 56, 67, 78, 89, 90, 123]
+			};
+			si.validate(schema, candidate, function (err, result) {
+				should.exist(err);
+				err.message.should.equal('Array length is too damn high!');
+				done();
+			});
+		});
 	}); // suite "schema #19.1"
 
 	suite('schema #19.2 (Asynchronous call + globing)', function () {
@@ -1553,6 +1620,44 @@ exports.validation = function () {
 				result.error[0].property.should.equal('@.lorem.ipsum');
 				result.error[1].property.should.equal('@.lorem.sit');
 				result.error[2].property.should.equal('@.lorem.consectetur');
+				done();
+			});
+		});
+	}); // suite "schema #19.2"
+
+	suite('schema #19.3 (Asynchronous call++)', function () {
+		var schema = {
+			type: 'array',
+			minLength: 1,
+			items: [{
+				type: [ 'string', 'object' ],
+				properties: {
+					merchantId: {
+						type: [ 'integer', 'string' ],
+						optional: true,
+						alias: 'merchant Id'
+					},
+					id: {
+						type: [ 'integer', 'string'],
+						optional: true,
+						alias: 'id'
+					},
+					mktpAlias: {
+						type: 'string',
+						optional: true,
+						alias: 'marketplace alias'
+					}
+				}
+			}]
+		};
+		test('object #1', function (done) {
+			var candidate = [ 'thisIsAString' ];
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
 				done();
 			});
 		});
@@ -1614,7 +1719,8 @@ exports.validation = function () {
 			type: 'object',
 			properties: {
 				lorem: { type: 'number', $divisibleBy: 4 },
-				ipsum: { type: 'number', $divisibleBy: 5 }
+				ipsum: { type: 'number', $divisibleBy: 5 },
+				dolor: { type: 'number', $divisibleBy: 0, optional: true }
 			}
 		};
 
@@ -1626,6 +1732,9 @@ exports.validation = function () {
 				}
 				var self = this;
 				process.nextTick(function () {
+					if (dvb === 0) {
+						return callback(new Error('Schema error: Divisor must not equal 0'));
+					}
 					var r = candidate / dvb;
 					if ((r | 0) !== r)  {
 						self.report('should be divisible by ' + dvb);
@@ -1638,12 +1747,13 @@ exports.validation = function () {
 		test('candidate #1', function (done) {
 			var candidate = {
 				lorem: 12,
-				ipsum: 25,
+				ipsum: 25
 			};
 
 			si.validate(schema, candidate, custom, function (err, result) {
 				should.not.exist(err);
 				result.should.be.a('object');
+				console.log(result.format());
 				result.should.have.property('valid').with.equal(true);
 				result.should.have.property('error').with.be.an.instanceof(Array)
 				.and.be.lengthOf(0);
@@ -1665,6 +1775,20 @@ exports.validation = function () {
 				.and.be.lengthOf(2);
 				result.error[0].property.should.equal('@.lorem');
 				result.error[1].property.should.equal('@.ipsum');
+				done();
+			});
+		});
+
+		test('candidate #3', function (done) {
+			var candidate = {
+				lorem: 11,
+				ipsum: 4,
+				dolor: 32
+			};
+
+			si.validate(schema, candidate, custom, function (err, result) {
+				should.exist(err);
+				err.message.should.equal('Schema error: Divisor must not equal 0');
 				done();
 			});
 		});

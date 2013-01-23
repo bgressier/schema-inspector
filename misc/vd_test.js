@@ -17,28 +17,32 @@ if (typeof require === 'function') {
 		.replace(/:(&nbsp;)+(undefined)(,?)/g, ':$1<font color="grey">$2</font>$3');
 	}
 
-	var schema = {
-		type: 'object',
-		strict: false,
+var schema = {
+	type: 'array',
+	minLength: 1,
+	items: [{
+		type: [ 'string', 'object' ],
 		properties: {
-			lorem: { type: 'string', $v12: 'truc'	},
-			ipsum: { type: 'number'	},
-			dolor: { type: 'string'	}
+			merchantId: {
+				type: [ 'integer', 'string' ],
+				optional: true,
+				alias: 'merchant Id'
+			},
+			id: {
+				type: [ 'integer', 'string'],
+				optional: true,
+				alias: 'id'
+			},
+			mktpAlias: {
+				type: 'string',
+				optional: true,
+				alias: 'marketplace alias'
+			}
 		}
-	};
+	}]
+};
 
-	var custom = {
-		v12: function (schema, post) {
-		}
-	};
-
-	var obj = {
-		lorem: 12,
-		ipsum: 23,
-		dolor: 'sit amet',
-		// truc: false,
-		lol: false
-	};
+var obj = [ '50ffc1baad86e22212000007' ];
 
 	// ---------------------------------------------------------------------------
 	var vdr = SchemaInspector.newValidation(schema);
@@ -48,7 +52,7 @@ if (typeof require === 'function') {
 		console.log(r.format());
 	});
 
-return;
+return setTimeout(function () {}, 2000);
 	var r = SchemaInspector.validate(obj);
 
 	var done = function () {
