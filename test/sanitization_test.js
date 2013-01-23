@@ -950,6 +950,50 @@ exports.sanitization = function () {
 		});
 	}); // suite "schema #16.2"
 
+	suite('schema #16.3 (field "exec" and context)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'object',
+					properties: {
+						ipsum: { type: 'string' }
+					}
+				},
+				sit: {
+					exec: function (schema, candidate) {
+						this.report();
+						return this.origin.lorem;
+					}
+				}
+			}
+		};
+
+		test('candidate #1', function () {
+			var candidate = {
+				lorem: {
+					ipsum: 'dolor'
+				},
+				sit: 'amet'
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(1);
+				candidate.should.eql({
+					lorem: {
+						ipsum: 'dolor'
+					},
+					sit: {
+						ipsum: 'dolor'
+					}
+				});
+			});
+		});
+	});
+
 	suite('schema #16.3 (Asynchronous call with custom field)', function () {
 		var schema = {
 			type: 'object',
