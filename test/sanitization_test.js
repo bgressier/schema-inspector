@@ -994,7 +994,7 @@ exports.sanitization = function () {
 		});
 	});
 
-	suite('schema #16.3 (Asynchronous call with custom field)', function () {
+	suite('schema #16.4 (Asynchronous call with custom field)', function () {
 		var schema = {
 			type: 'object',
 			properties: {
@@ -1052,5 +1052,49 @@ exports.sanitization = function () {
 				done();
 			});
 		});
-	}); // suite "schema #16.3"
+	}); // suite "schema #16.4"
+
+	suite('Schema #16.5 (Asynchronous call with exec "field" with synchrous function', function () {
+		var schema = {
+			type: 'array',
+			items: {
+				type: 'string',
+				exec: function (schema, post) {
+					if (typeof post === 'string' && !/^nikita$/i.test(post)) {
+						this.report();
+						return 'INVALID';
+					}
+					return post;
+				}
+			}
+		};
+
+		test('candidate #1', function (done) {
+			var candidate = [ 'Nikita', 'nikita', 'NIKITA' ];
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				candidate.should.eql([ 'Nikita', 'nikita', 'NIKITA' ]);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = [ 'Nikita', 'lol', 'NIKITA', 'thisIsGonnaBeSanitized!' ];
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.reporting[0].property.should.be.equal('@[1]');
+				result.reporting[1].property.should.be.equal('@[3]');
+				candidate.should.eql([ 'Nikita', 'INVALID', 'NIKITA', 'INVALID' ])
+				done();
+			});
+		});
+	}); // suite "schema #16.5"
 };

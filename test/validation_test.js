@@ -1233,6 +1233,80 @@ exports.validation = function () {
 
 	}); // suite "schema #16.1"
 
+	suite('Schema #16.2 (Asynchronous call with exec "field" with synchrous function', function () {
+		var schema = {
+			type: 'array',
+			items: {
+				type: 'string',
+				exec: function (schema, candidate) {
+					if (typeof candidate === 'string' && candidate !== 'teub') {
+						this.report('You must give a string equal to "teub".');
+					}
+				}
+			}
+		};
+		test('candidate #1', function (done) {
+			var candidate = [
+				'teub',
+				'teub',
+				'teub'
+			];
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = [
+				'thisIsAString',
+				'teub',
+				'notValid',
+				'teub',
+				'thisOneNeither'
+			];
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(3);
+				result.error[0].property.should.equal('@[0]');
+				result.error[1].property.should.equal('@[2]');
+				result.error[2].property.should.equal('@[4]');
+				done();
+			});
+		});
+
+		test('candidate #3', function (done) {
+			var candidate = [
+				1234,
+				'teub',
+				new Date(),
+				'teub',
+				[12, 23]
+			];
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(3);
+				result.error[0].property.should.equal('@[0]');
+				result.error[1].property.should.equal('@[2]');
+				result.error[2].property.should.equal('@[4]');
+				done();
+			});
+		});
+	}); // suite "schema #16.2"
+
 	suite('schema #16.2 ("exec" field testing with context)', function () {
 		var schema = {
 			type: 'object',
@@ -1753,7 +1827,6 @@ exports.validation = function () {
 			si.validate(schema, candidate, custom, function (err, result) {
 				should.not.exist(err);
 				result.should.be.a('object');
-				console.log(result.format());
 				result.should.have.property('valid').with.equal(true);
 				result.should.have.property('error').with.be.an.instanceof(Array)
 				.and.be.lengthOf(0);
