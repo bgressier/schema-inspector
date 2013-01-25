@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "main": "./lib/schema-inspector.js",
   "dependencies": {
-    "async": ">=0.1.22"
+    "async": "https://github.com/PanteraCommerce/async/tarball/master"
   },
   "devDependencies": {
     "mocha": "https://github.com/visionmedia/mocha/tarball/master",
