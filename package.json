@@ -1,6 +1,6 @@
 {
   "name": "schema-inspector",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "main": "./lib/schema-inspector.js",
   "dependencies": {
     "async": "https://github.com/PanteraCommerce/async/tarball/master"
