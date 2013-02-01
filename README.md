@@ -10,6 +10,8 @@ calls.
 
 ## Quick Examples
 
+### Synchronous call
+
 ```javascript
 	var si = require('schema-inspector');
 
@@ -37,7 +39,7 @@ calls.
 	*/
 ```
 
-## Asynchronous call
+### Asynchronous call
 
 ```javascript
 	var si = require('schema-inspector');
@@ -56,9 +58,43 @@ calls.
 	});
 ```
 
+### Custom fields
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'array',
+		items: { type: 'number', $divisibleBy: 5 }
+	};
+
+	var custom = {
+		divisibleBy: function (schema, candidate) {
+			var dvb = schema.$divisibleBy;16
+			if (cndidate % dvb !== 0) {
+				this.report('must be divisible by ' + dvb);
+			}
+		}
+	};
+
+	var c = [ 5, 10, 15, 16];
+	si.validate(schema, candidate, custom); // Invalid: "@[3] must be divisible by 5"
+```
+
 ## In the browser
 
-TODO
+```html
+<script type="text/javascript" src="async.js"></script>
+<script type="text/javascript" src="schema-inspetor.js"></script>
+
+<script type="text/javascript">
+
+	SchemaInspector.validate(schema, candidate, function (err, result) {
+		alert(result.format());
+	});
+
+</script>
+```
 
 ## Documentation
 
@@ -502,6 +538,11 @@ __Example__
 * **type**: object, array of object.
 * **usable on**: array.
 
+Allow to apply schema validation for each element in an array. If it's an
+object, then it's a schema which will be used for all the element. If it's an
+array of object, then it's an array of schema and each element in an array will
+be checked with the schema which has the same position in the array.
+
 __Example__
 
 ```javascript
@@ -539,6 +580,8 @@ __Example__
 * **type**: string.
 * **usable on**: any.
 
+Allow to display a more explicit property name if an error is encounted.
+
 __Example__
 
 ```javascript
@@ -573,6 +616,9 @@ __Example__
 
 * **type**: string.
 * **usable on**: any.
+
+This field contains a user sentence for displaying a more explicit message if
+an error is encounted.
 
 __Example__
 
