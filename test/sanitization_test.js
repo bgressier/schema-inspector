@@ -1097,4 +1097,71 @@ exports.sanitization = function () {
 			});
 		});
 	}); // suite "schema #16.5"
+
+	suite('schema #16.6 (Default custom field)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: {
+					type: 'number',
+					$superiorMod: 5
+				}
+			}
+		};
+
+		var custom = {
+			superiorMod: function (schema, post, callback) {
+				var spm = schema.$superiorMod;
+				if (typeof spm !== 'number' || typeof post !== 'number') {
+					callback();
+				}
+				var self = this;
+				process.nextTick(function () {
+					var mod = post % spm;
+					if (mod !== 0) {
+						self.report();
+						return callback(null, post + spm - mod);
+					}
+					callback(null, post);
+				});
+			}
+		};
+
+		si.Sanitization.extend(custom);
+
+		test('candidat #1', function (done) {
+			var candidate = {
+				lorem: 5
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidat #2', function (done) {
+			var candidate = {
+				lorem: 7
+			};
+
+			si.sanitize(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('reporting').with.be.an.instanceof(Array)
+				.and.be.lengthOf(1);
+				result.reporting[0].property.should.be.equal('@.lorem');
+				candidate.lorem.should.equal(10);
+				done();
+			});
+		});
+
+		test('Reseting default schema', function () {
+			si.Sanitization.reset();
+			si.Sanitization.custom.should.eql({});
+		});
+	}); // suite "schema #16.6"
 };

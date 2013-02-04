@@ -92,6 +92,48 @@ exports.validation = function () {
 		});
 	}); // suite "schema #1"
 
+	suite('schema #1.1 (Types tests)', function () {
+		var schema = {
+			type: 'array',
+			items: [
+				{ type: 'function' },
+				{ type: 'string' },
+				{ type: 'number' },
+				{ type: 'integer' }
+			]
+		};
+
+		test('candidate #1', function () {
+			var candidate = [
+				function () {},
+				'Nikita',
+				1234.1234,
+				1234
+			];
+			var result = si.validate(schema, candidate);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(true);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(0);
+		});
+
+		test('candidate #2', function () {
+			var candidate = [
+				null,
+				'Nikita',
+				1234,
+				1234.1234
+			];
+			var result = si.validate(schema, candidate);
+			result.should.be.a('object');
+			result.should.have.property('valid').with.equal(false);
+			result.should.have.property('error').with.be.an.instanceof(Array)
+			.and.be.lengthOf(2);
+			result.error[0].property.should.equal('@[0]');
+			result.error[1].property.should.equal('@[3]');
+		});
+	}); // suite "schema #1.1"
+
 	suite('schema #2 (deeply nested object inspection)', function () {
 		var schema = {
 			type: 'object',
@@ -1866,4 +1908,91 @@ exports.validation = function () {
 			});
 		});
 	}); // suite "schema #20.1"
+
+
+	suite('schema #20.2 (default custom schemas)', function () {
+		var schema = {
+			type: 'object',
+			properties: {
+				lorem: { type: 'number', $divisibleBy: 4 },
+				ipsum: { type: 'number', $divisibleBy: 5 },
+				dolor: { type: 'number', $divisibleBy: 0, optional: true }
+			}
+		};
+
+		var custom = {
+			divisibleBy: function (schema, candidate, callback) {
+				var dvb = schema.$divisibleBy;
+				if (typeof dvb !== 'number' || typeof candidate !== 'number') {
+					return callback();
+				}
+				var self = this;
+				process.nextTick(function () {
+					if (dvb === 0) {
+						return callback(new Error('Schema error: Divisor must not equal 0'));
+					}
+					var r = candidate / dvb;
+					if ((r | 0) !== r)  {
+						self.report('should be divisible by ' + dvb);
+					}
+					callback();
+				});
+			}
+		};
+
+		si.Validation.extend(custom);
+
+		test('candidate #1', function (done) {
+			var candidate = {
+				lorem: 12,
+				ipsum: 25
+			};
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(true);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(0);
+				done();
+			});
+		});
+
+		test('candidate #2', function (done) {
+			var candidate = {
+				lorem: 11,
+				ipsum: 22,
+			};
+
+			si.validate(schema, candidate, function (err, result) {
+				should.not.exist(err);
+				result.should.be.a('object');
+				result.should.have.property('valid').with.equal(false);
+				result.should.have.property('error').with.be.an.instanceof(Array)
+				.and.be.lengthOf(2);
+				result.error[0].property.should.equal('@.lorem');
+				result.error[1].property.should.equal('@.ipsum');
+				done();
+			});
+		});
+
+		test('candidate #3', function (done) {
+			var candidate = {
+				lorem: 11,
+				ipsum: 4,
+				dolor: 32
+			};
+
+			si.validate(schema, candidate, function (err, result) {
+				should.exist(err);
+				err.message.should.equal('Schema error: Divisor must not equal 0');
+				done();
+			});
+		});
+
+		test('Reseting default schema', function () {
+			si.Validation.reset();
+			si.Validation.custom.should.eql({});
+		});
+	}); // suite "schema #20.2"
 };
