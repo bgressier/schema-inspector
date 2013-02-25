@@ -77,7 +77,7 @@ calls.
 		}
 	};
 
-	var c = [ 5, 10, 15, 16];
+	var candidate = [ 5, 10, 15, 16 ];
 	si.validate(schema, candidate, custom); // Invalid: "@[3] must be divisible by 5"
 ```
 
@@ -116,6 +116,7 @@ calls.
 ### Sanitization
 
 * [type](#s_type)
+* [def](#s_def)
 * [optional](#s_optional)
 * [rules](#s_rules)
 * [min, min](#s_comparators)
@@ -124,6 +125,14 @@ calls.
 * [properties](#s_properties)
 * [items](#s_items)
 
+### Custom fields
+* [punctual use](#cf_punctual)
+* [extension](#cf_extension)
+* [context](#cf_context)
+
+### Asynchronous call
+* [How to](#a_howTo)
+
 ## Validation
 
 <a name="v_type" />
@@ -131,16 +140,16 @@ calls.
 
 * **type**: string, array of string.
 * **usable on**: any.
-* possible values
-	* "string"
-	* "number"
-	* "integer"
-	* "boolean"
-	* "null"
-	* "date" (constructor === Date)
-	* "object" (constructor === Object)
-	* "array" (constructor === Array)
-	* "any" (it can be anything)
+* **possible values**
+	* `string`
+	* `number`
+	* `integer`
+	* `boolean`
+	* `null`
+	* `date` (constructor === Date)
+	* `object` (constructor === Object)
+	* `array` (constructor === Array)
+	* `any` (it can be anything)
 
 Allow to check property type. If the given value is incorrect, then type is not
 checked.
@@ -195,7 +204,7 @@ __Example__
 * **default**: false.
 * **usable on**: any.
 
-This fields tell whether or not property has to exist.
+This field indicates whether or not property has to exist.
 
 __Example__
 
@@ -647,20 +656,130 @@ __Example__
 
 ## Sanitization
 
+<a name="s_type" />
+### type
+
+* **type**: string.
+* **usable on**: any.
+* **possible values**
+	* `number`
+	* `integer`
+	* `string`
+	* `boolean`
+	* `date` (constructor === Date)
+	* `object` (constructor === Object)
+
+Cast property to the given type according to the following description:
+* **to number from**:
+	* string			("12.34": 12.34)
+* **to integer from**:
+	* number 			(12.34: 12)
+	* string			("12.34": 12)
+	* boolean			(true: 1, false: 0)
+* **to string from**:
+	* boolean				(true: "true")
+	* number				(12.34: "12.34")
+	* integer				(12: "12")
+	* date					([object Date]: "Mon Feb 25 2013 12:03:25 GMT+0100 (CET)")
+	* array					([12, 23, 44]: '12,34,45')
+* **to date from**:
+	* number				(1361790386000 -> Mon Feb 25 2013 12:06:26 GMT+0100 (CET))
+	* string				("2013-02-25T11:06:26.704Z" -> Mon Feb 25 2013 12:06:26 GMT+0100 (CET))
+									("Mon Feb 25 2013 12:06:26 GMT+0100 (CET)" -> Mon Feb 25 2013 12:06:26 GMT+0100 (CET))
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'array',
+		items: { type: 'string' }
+	};
+
+	var c = [12.23, -34, true, false, 'true', 'false', [123, 234, 345]];
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: ['12.23', '-34', 'true', 'false', 'true', 'false', '123,234,345']
+	*/
+```
+
+---------------------------------------
+
+<a name="s_def" />
+### def
+* **type**: any.
+* **usable on**: any.
+
+Define default value if property does not exist, or if type casting is to fail
+because entry type is not valid (cf [type](#s_type)).
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'number', def: 10 },
+			ipsum: { type: 'string', def: 'NikitaJS', optional: false },
+			dolor: { type: 'string' }
+		}
+	};
+
+	var c = {
+		lorem: [12, 23],	// convertion to number is about to fail
+											// (array -> number is not possible)
+											// ipsum is not privided
+		dolor: 'sit amet' // "dolor" is already a string
+	};
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: {
+			lorem: 10,
+			ipsum: 'NikitaJS',
+			dolor: 'sit amet'
+		}
+	*/
+```
+
+---------------------------------------
+
 <a name="s_optional" />
 ### optional
 
 * **type**: boolean.
-* **default**: false.
+* **default**: true.
 * **usable on**: any.
 
----------------------------------------
+Property is set to `schema.def` if not provided and if optional is `false`.
 
-<a name="s_type" />
-### type
+__Example__
 
-* **type**: string, array of string.
-* **usable on**: any.
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'number', optional: false, def: 12 },
+			ipsum: { type: 'string', optional: true, def: 23 },
+			dolor: { type: 'string', def: 'NikitaJS, def: 34 } // (optional: true)
+		}
+	};
+
+	var c = { };
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: {
+			lorem: 12 // Only lorem is set to 12 because it is not optional.
+		}
+	*/
+```
 
 ---------------------------------------
 
@@ -669,14 +788,74 @@ __Example__
 
 * **type**: string, array of string.
 * **usable on**: string.
+* **possible values**:
+	* `upper`: Every character will be changed to uppercase.
+	* `lower`: Every character will be changed to lowercase.
+	* `title`: For each word (/\S*/g), first letter will be changed to uppercase, and the rest to lowercase.
+	* `capitalize`: Only the first letter of the string will be changed to uppercase, the rest to lowercase.
+	* `trim`: Remove extra spaces.
+
+Apply the given rule to a string. If several rules are given (array), then they
+are applied in the same order than in the array.
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'string', rules: 'upper' },
+			ipsum: { type: 'string', rules: [ 'trim', 'title'] }
+		}
+	};
+
+	var c = {
+		lorem: ' tHiS is sParTa! ',
+		ipsum: '   tHiS is sParTa!    '
+	};
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: {
+			lorem: ' THIS IS SPARTA! ',
+			ipsum: 'This Is Sparta!' // has been trimed, then titled
+		}
+	*/
+```
 
 ---------------------------------------
 
 <a name="s_comparators" />
-### min, min
+### min, max
 
 * **type**: string, number.
 * **usable on**: string, number.
+
+Define minimum and maximum value for a property. If it's less than minimum,
+then it's set to minimum. If it's greater than maximum, then it's set to
+maximum.
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'array',
+		items: { type: 'number', min: 10, max: 20 }
+	};
+
+	var c = [5, 10, 15, 20, 25];
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: [10, 10, 15, 20, 20]
+		c[0] (5) was less than min (10), so it's been set to 10.
+		c[4] (25) was greater than max (20), so it's been set to 20.
+	*/
+```
 
 ---------------------------------------
 
@@ -686,6 +865,28 @@ __Example__
 * **type**: integer.
 * **usable on**: string.
 
+Adjust string length to the given number.
+
+__TODO:__ We must be able to choose which character we want to fill the string with.
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'array',
+		items: { type: 'string', minLength: 8, maxLength: 11 }
+	};
+
+	var c = ['short', 'mediumSize', 'tooLongForThisSchema'];
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: ['short---', 'mediumSize', 'tooLongForT']
+	*/
+```
+
 ---------------------------------------
 
 <a name="s_exec" />
@@ -693,6 +894,41 @@ __Example__
 
 * **type**: function, array of functions.
 * **usable on**: any.
+
+Custom checker =). "exec" functions take two three parameter
+(schema, post [, callback]), and must return the new value. To report an
+sanitization, use `this.report([message])`. Very useful to make some custom
+sanitization.
+
+__NB:__ If you don't want to return a differant value, simply return `post`,
+do not return nothing (if you do so, the new value will be `undefined`).
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'array',
+		items: {
+			type: 'string',
+			exec: function (schema, post) {
+				if (typeof post === 'string' && !/^nikita$/i.test(post)) {
+					this.report();
+					return '_INVALID_';
+				}
+				return post;
+			}
+		}
+	};
+
+	var c = [ 'Nikita', 'lol', 'NIKITA', 'thisIsGonnaBeSanitized!' ];
+
+	var r = SchemaInspector.sanitize(schema, c);
+	/*
+		c: [ 'Nikita', '_INVALID_', 'NIKITA', '_INVALID_' ]
+	*/
+```
 
 ---------------------------------------
 
@@ -702,6 +938,8 @@ __Example__
 * **type**: object.
 * **usable on**: object.
 
+Work the same way as [validation "properties"](#v_properties).
+
 ---------------------------------------
 
 <a name="s_items" />
@@ -709,3 +947,213 @@ __Example__
 
 * **type**: object, array of object.
 * **usable on**: array.
+
+Work the same way as [validation "items"](#v_items).
+
+## Custom fields
+
+<a name="cf_punctual" />
+### punctual use
+
+When you need to use the same function in `exec` field several time, instead of
+saving the function and declaring `exec` several times, just use custom field.
+First you have to provide a hash containing a function for each custom field you
+want to inject. Then you can call them in your schema with $"your field name".
+For example if you
+provide a custom field called "superiorMod", you can access itwith name
+"$superiorMod".
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'number', $divisibleBy: 5 },
+			ipsum: { type: 'number', $divisibleBy: 3 }
+		}
+	};
+
+	var custom = {
+		divisibleBy: function (schema, candidate) {
+			var dvb = schema.$divisibleBy;16
+			if (cndidate % dvb !== 0) {
+				this.report('must be divisible by ' + dvb);
+			}
+		}
+	};
+
+	var c = {
+		lorem: 10,
+		ipsum: 8
+	};
+	si.validate(schema, candidate, custom); // Invalid: "@.ipsum must be divisible by 3"
+```
+
+---------------------------------------
+
+<a name="cf_extension" />
+### extension
+
+Sometime you want to use a custom field everywhere in your programme, so you may
+extend Schema-Inspector to do so. Just call the method
+_si.Validation.extend(customFieldObject)_ or
+_si.Sanitization.extend(customFieldObject)_. If you want to reset, simply call
+_si.Validation.reset()_ or _si.Sanitization.reset()_. You also can remove a
+specific field by calling _si.Validation.remove(field)_ or
+_si.Sanitization.remove(field)_.
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var custom = {
+		divisibleBy: function (schema, candidate) {
+			var dvb = schema.$divisibleBy;16
+			if (cndidate % dvb !== 0) {
+				this.report('must be divisible by ' + dvb);
+			}
+		}
+	};
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'number', $divisibleBy: 5 },
+			ipsum: { type: 'number', $divisibleBy: 3 }
+		}
+	};
+
+	si.Validation.extend(custom);
+
+	var candidate = {
+		lorem: 10,
+		ipsum: 8
+	};
+
+	si.validate(schema, candidate);
+	/*
+		As you can see, no more object than schema and candidate has been provided.
+		Therefore we can use `$divisibleBy` everywhere in all schemas, for each
+		si.validate() call.
+	*/
+```
+
+<a name="cf_context" />
+### Context
+
+Every function you declare as a custom parameter, or with `exec` field will be
+called with a context. This context allow you to access properties, like
+`this.report()` function, but also `this.origin`, which is equal to the object
+sent to `si.validate()` or `si.sanitize()`.
+
+__Example__
+
+```javascript
+	// ...
+	var schema = { ... };
+	var custom = {
+		divisibleBy: function (schema, candidate) {
+			// this.origin === [12, 23, 34, 45]
+			// ...
+		}
+	};
+	var candidate = [12, 23, 34, 45];
+	var r = si.validate(schema, candidate, custom);
+	// ...
+
+```
+
+## Asynchronous call
+
+<a name="a_howTo" />
+### How to
+
+All the example above used synchronous call (the simplest). But sometime you
+want to call validation or sanitization asynchronously, in particular with
+`exec` and custom fields. It's pretty simple: To do so, just send a callback
+as extra parameter. It takes 2 parameters: error and result. Actually
+Schema-Inspector should send back no error as it should not throw any if called
+synchronously. But if you want to send back and error in your custom function,
+inspection will be interrupted, and you will be able to retrieve it in your
+callback.
+
+You also have to declare a callback in your `exec` or custom function to make
+Schema-Inspector call it asynchronously, else it will be call synchronously.
+That means you may use `exec` synchronous function normally even during
+and asynchronous call.
+
+__Example__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = { ...	};
+	var candidate = { ... };
+
+	si.validate(schema, candidate, function (err, result) {
+		console.log(result.format());
+	});
+```
+
+__Example with custom field__
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = { ...	};
+	var candidate = { ... };
+	var custom = { ... };
+
+	si.validate(schema, candidate, custom, function (err, result) {
+		console.log(result.format());
+	});
+```
+
+Here a full example where you may have to use it:
+
+```javascript
+	var si = require('schema-inspector');
+
+	var schema = {
+		type: 'object',
+		properties: {
+			lorem: { type: 'number', $divisibleBy: 4 },
+			ipsum: { type: 'number', $divisibleBy: 5 },
+			dolor: { type: 'number', $divisibleBy: 0, optional: true }
+		}
+	};
+
+	var custom = {
+		divisibleBy: function (schema, candidate, callback) { // Third parameter is declared:
+			// Schema-Inspector will wait this function to call this `callback` to keep running.
+			var dvb = schema.$divisibleBy;
+			if (typeof dvb !== 'number' || typeof candidate !== 'number') {
+				return callback();
+			}
+			var self = this;
+			process.nextTick(function () {
+				if (dvb === 0) {
+					return callback(new Error('Schema error: Divisor must not equal 0'));
+				}
+				var r = candidate / dvb;
+				if ((r | 0) !== r)  {
+					self.report('should be divisible by ' + dvb);
+				}
+				callback();
+			});
+		}
+	};
+
+	var candidate = {
+		lorem: 12,
+		ipsum: 25
+	};
+
+	si.validate(schema, candidate, custom, function (err, result) {
+		console.log(result.format());
+	});
+```
