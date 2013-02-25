@@ -100,35 +100,33 @@ calls.
 
 ### Validation
 
-* [type](#type)
-* [optional](#optional)
-* [pattern](#pattern)
-* [minLength, maxLength, exactLength](#length)
-* [lt, lte, gt, gte, eq, ne](#comparators)
-* [someKeys](#someKeys)
-* [strict](#strict)
-* [exec](#exec)
-* [properties](#properties)
-* [items](#items)
-* [alias](#alias)
-* [error](#error)
+* [type](#v_type)
+* [optional](#v_optional)
+* [pattern](#v_pattern)
+* [minLength, maxLength, exactLength](#v_length)
+* [lt, lte, gt, gte, eq, ne](#v_comparators)
+* [someKeys](#v_someKeys)
+* [strict](#v_strict)
+* [exec](#v_exec)
+* [properties](#v_properties)
+* [items](#v_items)
+* [alias](#v_alias)
+* [error](#v_error)
 
 ### Sanitization
 
-* [type](#type)
-* [optional](#optional)
-* [rules](#rules)
-* [min](#min)
-* [max](#max)
-* [minLength](#minLength)
-* [maxLength](#maxLength)
-* [properties](#properties)
-* [items](#items)
-* [exec](#exec)
+* [type](#s_type)
+* [optional](#s_optional)
+* [rules](#s_rules)
+* [min, min](#s_comparators)
+* [minLength, maxLength](#s_length)
+* [exec](#s_exec)
+* [properties](#s_properties)
+* [items](#s_items)
 
 ## Validation
 
-<a name="type" />
+<a name="v_type" />
 ### type
 
 * **type**: string, array of string.
@@ -190,7 +188,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="optional" />
+<a name="v_optional" />
 ### optional
 
 * **type**: boolean.
@@ -229,7 +227,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="uniqueness" />
+<a name="v_uniqueness" />
 ### uniqueness
 
 * **type**: boolean.
@@ -257,7 +255,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="pattern" />
+<a name="v_pattern" />
 ### pattern
 
 * **type**: string, RegExp object, array of string and RegExp.
@@ -295,7 +293,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="length" />
+<a name="v_length" />
 ### minLength, maxLength, exactLength
 
 * **type**: integer.
@@ -330,7 +328,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="comparators" />
+<a name="v_comparators" />
 ### lt, lte, gt, gte, eq, ne
 
 * **type**: number.
@@ -369,7 +367,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="someKeys" />
+<a name="v_someKeys" />
 ### someKeys
 
 * **type**: array of string.
@@ -404,7 +402,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="strict" />
+<a name="v_strict" />
 ### strict
 
 * **type**: boolean.
@@ -437,7 +435,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="exec" />
+<a name="v_exec" />
 ### exec
 
 * **type**: function, array of function.
@@ -477,7 +475,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="properties" />
+<a name="v_properties" />
 ### properties
 
 * **type**: object.
@@ -532,7 +530,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="items" />
+<a name="v_items" />
 ### items
 
 * **type**: object, array of object.
@@ -574,7 +572,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="alias" />
+<a name="v_alias" />
 ### alias
 
 * **type**: string.
@@ -611,7 +609,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="error" />
+<a name="v_error" />
 ### error
 
 * **type**: string.
@@ -649,7 +647,7 @@ __Example__
 
 ## Sanitization
 
-<a name="optional" />
+<a name="s_optional" />
 ### optional
 
 * **type**: boolean.
@@ -658,7 +656,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="type" />
+<a name="s_type" />
 ### type
 
 * **type**: string, array of string.
@@ -666,7 +664,7 @@ __Example__
 
 ---------------------------------------
 
-<a name="rules" />
+<a name="s_rules" />
 ### rules
 
 * **type**: string, array of string.
@@ -674,39 +672,31 @@ __Example__
 
 ---------------------------------------
 
-<a name="min" />
-### min
+<a name="s_comparators" />
+### min, min
 
 * **type**: string, number.
 * **usable on**: string, number.
 
 ---------------------------------------
 
-<a name="max" />
-### max
-
-* **type**: string, number.
-* **usable on**: string, number.
-
----------------------------------------
-
-<a name="minLength" />
-### minLength
+<a name="s_length" />
+### minLength, maxLength
 
 * **type**: integer.
 * **usable on**: string.
 
 ---------------------------------------
 
-<a name="maxLength" />
-### maxLength
+<a name="s_exec" />
+### exec
 
-* **type**: integer.
-* **usable on**: string.
+* **type**: function, array of functions.
+* **usable on**: any.
 
 ---------------------------------------
 
-<a name="properties" />
+<a name="s_properties" />
 ### properties
 
 * **type**: object.
@@ -714,16 +704,8 @@ __Example__
 
 ---------------------------------------
 
-<a name="items" />
+<a name="s_items" />
 ### items
 
 * **type**: object, array of object.
 * **usable on**: array.
-
----------------------------------------
-
-<a name="exec" />
-### exec
-
-* **type**: function, array of functions.
-* **usable on**: any.
