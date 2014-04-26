@@ -3,11 +3,11 @@
   "version": "1.2.2",
   "main": "./lib/schema-inspector.js",
   "dependencies": {
-    "async": "https://github.com/PanteraCommerce/async/tarball/master"
+    "async": "0.4.0"
   },
   "devDependencies": {
-    "mocha": "https://github.com/visionmedia/mocha/tarball/master",
-    "should": "https://github.com/visionmedia/should.js/tarball/master"
+    "mocha": "1.18.2",
+    "should": "1.2.1"
   },
   "scripts": {
     "test": "make test"
