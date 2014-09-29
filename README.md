@@ -1,9 +1,7 @@
 # Schema-Inspector
 
-Schema-Inspector is powerful tools to validation or sanitize javascript object.
-It is disigned to work both client-side and server-side. Although originally
-designed for use with [node.js](http://nodejs.org), it can also be used directly
-in the browser.
+Schema-Inspector is powerful tools to validate or sanitize javascript objects.
+It is disigned to work both client-side and server-side.
 
 Schema-Inspector has to be very scalable, and allow asynchronous and synchronous
 calls.
@@ -204,7 +202,7 @@ __Example__
 * **default**: false.
 * **usable on**: any.
 
-This field indicates whether or not property has to exist.
+This field indicates whether or not the property has to exist.
 
 __Example__
 
@@ -273,7 +271,7 @@ __Example__
 `coolDateTime`, `time`, `color`, `email`, `numeric`, `integer`, `decimal`,
 `alpha`, `alphaNumeric`, `alphaDash`, `javascript`, `upperString`, `lowerString`.
 
-Ask Schema-Inspector to check whether or not a given matches provided patterns.
+Ask Schema-Inspector to check whether or not a given string matches provided patterns.
 When a pattern is a RegExp, it directly test the string with it. When it's a
 string, it's an alias of a RegExp.
 
@@ -418,7 +416,7 @@ __Example__
 * **default**: false.
 * **usable on**: object.
 
-Only key provided in field "properties" may exist in object.
+Only the keys provided in field "properties" may exist in the object.
 
 __Example__
 
@@ -450,7 +448,7 @@ __Example__
 * **type**: function, array of function.
 * **usable on**: any.
 
-Custom checker =). "exec" functions take two three parameter
+Custom checker =). "exec" functions take two parameters
 (schema, post [, callback]). To report an error, use `this.report([message])`.
 Very useful to make some custom validation.
 
@@ -895,7 +893,7 @@ __Example__
 * **type**: function, array of functions.
 * **usable on**: any.
 
-Custom checker =). "exec" functions take two three parameter
+Custom checker =). "exec" functions take two/three parameter
 (schema, post [, callback]), and must return the new value. To report an
 sanitization, use `this.report([message])`. Very useful to make some custom
 sanitization.
@@ -960,7 +958,7 @@ saving the function and declaring `exec` several times, just use custom field.
 First you have to provide a hash containing a function for each custom field you
 want to inject. Then you can call them in your schema with $"your field name".
 For example if you
-provide a custom field called "superiorMod", you can access itwith name
+provide a custom field called "superiorMod", you can access it with name
 "$superiorMod".
 
 __Example__
@@ -1046,7 +1044,7 @@ __Example__
 ### Context
 
 Every function you declare as a custom parameter, or with `exec` field will be
-called with a context. This context allow you to access properties, like
+called with a context. This context allows you to access properties, like
 `this.report()` function, but also `this.origin`, which is equal to the object
 sent to `si.validate()` or `si.sanitize()`.
 
