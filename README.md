@@ -1,6 +1,6 @@
 # Schema-Inspector
 
-Schema-Inspector is powerful tools to validate or sanitize javascript objects.
+Schema-Inspector is a powerful tool to validate or sanitize javascript objects.
 It is disigned to work both client-side and server-side.
 
 Schema-Inspector has to be very scalable, and allow asynchronous and synchronous
